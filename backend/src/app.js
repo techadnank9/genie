@@ -21,10 +21,10 @@ export function buildApp({ smallestClient = createSmallestClient() } = {}) {
   });
 
   app.use("/api", searchRouter);
-  app.use("/api", createResultsRouter({ broker }));
+  app.use("/api", createResultsRouter({ broker, smallestClient }));
   app.use("/api", createStartSearchRouter({ broker, smallestClient }));
   app.use("/api", createStopSearchRouter({ broker, smallestClient }));
-  app.use("/webhooks", createWebhooksRouter({ broker }));
+  app.use("/webhooks", createWebhooksRouter({ broker, smallestClient }));
   app.get("/api/stream", (_request, response) => {
     response.setHeader("content-type", "text/event-stream; charset=utf-8");
     response.setHeader("cache-control", "no-cache");

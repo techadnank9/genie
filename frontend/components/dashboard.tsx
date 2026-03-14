@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { createResultsStream, fetchResults, startSearch, stopSearch } from "../lib/api";
 import type { SearchSession } from "../lib/types";
 import { BusinessList } from "./business-list";
+import { BusinessDrawer } from "./business-drawer";
 import { ResultsList } from "./results-list";
 
 type DashboardProps = {
@@ -14,6 +15,7 @@ type DashboardProps = {
   onServiceChange?: (service: string) => void;
   onStartSearch?: () => void;
   onStopSearch?: (sessionId: string) => void | Promise<void>;
+  onBackToPrompt?: () => void;
   isStarting?: boolean;
 };
 
@@ -24,12 +26,14 @@ export function Dashboard({
   onServiceChange,
   onStartSearch,
   onStopSearch,
+  onBackToPrompt,
   isStarting = false,
 }: DashboardProps) {
   const [activeService, setActiveService] = useState(selectedService);
   const [activeSession, setActiveSession] = useState<SearchSession | null>(session);
   const [starting, setStarting] = useState(isStarting);
   const [stopping, setStopping] = useState(false);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveSession(session);
@@ -38,6 +42,25 @@ export function Dashboard({
   useEffect(() => {
     setActiveService(selectedService);
   }, [selectedService]);
+
+  useEffect(() => {
+    const nextBusinesses = activeSession?.businesses || [];
+
+    if (nextBusinesses.length === 0) {
+      setSelectedBusinessId(null);
+      return;
+    }
+
+    const currentSelectionStillExists = nextBusinesses.some(
+      (business) => business.id === selectedBusinessId,
+    );
+
+    if (currentSelectionStillExists) {
+      return;
+    }
+
+    setSelectedBusinessId(null);
+  }, [activeSession, selectedBusinessId]);
 
   useEffect(() => {
     if (onServiceChange || onStartSearch) {
@@ -117,6 +140,14 @@ export function Dashboard({
 
   const currentSession = activeSession;
   const status = currentSession?.status || "idle";
+  const activeBusiness =
+    currentSession?.businesses.find((business) =>
+      ["calling", "requested"].includes(business.callStatus),
+    ) || null;
+  const selectedBusiness =
+    currentSession?.businesses.find((business) => business.id === selectedBusinessId) || null;
+  const selectedResult =
+    currentSession?.results.find((result) => result.businessId === selectedBusinessId) || null;
 
   return (
     <main className="min-h-screen bg-[#fafaf8] px-4 py-4 md:px-6 md:py-6">
@@ -141,6 +172,15 @@ export function Dashboard({
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3">
+              {onBackToPrompt ? (
+                <button
+                  className="text-sm font-medium text-zinc-500 transition hover:text-zinc-800"
+                  onClick={onBackToPrompt}
+                  type="button"
+                >
+                  Back to Genie
+                </button>
+              ) : null}
               {currentSession?.status !== "stopped" ? (
                 <button
                   className="text-sm font-medium text-rose-600 transition hover:text-rose-700"
@@ -163,7 +203,12 @@ export function Dashboard({
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <div className="space-y-6">
-            <BusinessList businesses={currentSession?.businesses || []} />
+            <BusinessList
+              activeBusinessId={activeBusiness?.id || null}
+              businesses={currentSession?.businesses || []}
+              onSelectBusiness={setSelectedBusinessId}
+              selectedBusinessId={selectedBusinessId}
+            />
           </div>
           <ResultsList
             results={currentSession?.results || []}
@@ -171,6 +216,12 @@ export function Dashboard({
           />
         </div>
       </div>
+      <BusinessDrawer
+        business={selectedBusiness}
+        isOpen={Boolean(selectedBusiness)}
+        onClose={() => setSelectedBusinessId(null)}
+        result={selectedResult}
+      />
     </main>
   );
 }

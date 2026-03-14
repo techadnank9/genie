@@ -1,8 +1,41 @@
 import { Router } from "express";
 
-import { listSessions, upsertResult } from "../store.js";
+import { listSessions, syncBusinessLiveDetails, upsertResult } from "../store.js";
 
-export function createResultsRouter({ broker }) {
+function normalizeLiveLog(log) {
+  if (!log) {
+    return null;
+  }
+
+  const extracted = log.extracted_data || log.extractedData || {};
+
+  return {
+    callId: log.callId || log.call_id || null,
+    status: log.status || "pending",
+    durationSeconds:
+      typeof log.duration === "number"
+        ? log.duration
+        : typeof log.callDuration === "number"
+          ? log.callDuration
+          : null,
+    fromPhone: log.from || log.fromPhone || null,
+    toPhone: log.to || log.toPhone || null,
+    disconnectReason: log.disconnectionReason || log.disconnectReason || null,
+    transcript: log.transcript || log.conversationTranscript || "",
+    summary: log.summary || "",
+    updatedAt: log.updatedAt || log.createdAt || new Date().toISOString(),
+    price:
+      typeof extracted.price === "number"
+        ? extracted.price
+        : typeof log.price === "number"
+          ? log.price
+          : null,
+    availability: extracted.availability || log.availability || "Unknown",
+    notes: extracted.notes || log.notes || log.summary || "",
+  };
+}
+
+export function createResultsRouter({ broker, smallestClient }) {
   const router = Router();
 
   router.post("/store-result", (request, response) => {
@@ -21,7 +54,67 @@ export function createResultsRouter({ broker }) {
     });
   });
 
-  router.get("/results", (_request, response) => {
+  router.get("/results", async (_request, response) => {
+    if (typeof smallestClient?.getConversationLog === "function") {
+      const sessions = listSessions();
+
+      for (const session of sessions) {
+        for (const business of session.businesses) {
+          if (!business.callId) {
+            continue;
+          }
+
+          try {
+            const liveLog = normalizeLiveLog(
+              await smallestClient.getConversationLog(business.callId),
+            );
+
+            if (!liveLog) {
+              continue;
+            }
+
+            syncBusinessLiveDetails({
+              sessionId: session.sessionId,
+              businessId: business.id,
+              callStatus: liveLog.status,
+              callId: liveLog.callId,
+              error: business.error,
+              callDurationSeconds: liveLog.durationSeconds,
+              fromPhone: liveLog.fromPhone,
+              toPhone: liveLog.toPhone,
+              disconnectReason: liveLog.disconnectReason,
+              transcript: liveLog.transcript || business.transcript || "",
+              summary: liveLog.summary || business.summary || "",
+              lastEventType: business.lastEventType || "conversation-log",
+              lastUpdatedAt: liveLog.updatedAt,
+            });
+
+            upsertResult({
+              sessionId: session.sessionId,
+              service: session.service,
+              result: {
+                businessId: business.id,
+                businessName: business.name,
+                phone: liveLog.toPhone || business.phone,
+                status: liveLog.status,
+                price: liveLog.price,
+                availability: liveLog.availability,
+                notes: liveLog.notes,
+                transcript: liveLog.transcript,
+                callId: liveLog.callId,
+                durationSeconds: liveLog.durationSeconds,
+                fromPhone: liveLog.fromPhone,
+                toPhone: liveLog.toPhone,
+                disconnectReason: liveLog.disconnectReason,
+              },
+            });
+          } catch {
+            // Keep the existing session state when live log enrichment is unavailable.
+          }
+        }
+      }
+    }
+
     response.json({
       sessions: listSessions(),
     });

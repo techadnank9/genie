@@ -34,5 +34,27 @@ export function createSmallestClient(config = getConfig()) {
         callId,
       };
     },
+    async getConversationLog(callId) {
+      if (!callId) {
+        return null;
+      }
+
+      const url = new URL(`${config.smallestBaseUrl}/conversation`);
+      url.searchParams.set("search", callId);
+      url.searchParams.set("limit", "1");
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${config.smallestApiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload = await response.json();
+      return payload?.data?.logs?.find((item) => item.callId === callId) || payload?.data?.logs?.[0] || null;
+    },
   };
 }

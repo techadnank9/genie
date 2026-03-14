@@ -136,4 +136,23 @@ describe("Dashboard", () => {
       expect(onStopSearch).toHaveBeenCalledWith("session-1");
     });
   });
+
+  it("opens a business detail drawer when a business card is selected", async () => {
+    render(
+      <Dashboard
+        services={["dental cleaning", "oil change"]}
+        selectedService="dental cleaning"
+        session={session}
+        onServiceChange={() => {}}
+        onStartSearch={() => {}}
+        isStarting={false}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByText(/Bright Smile Dental/i)[0]);
+
+    expect(screen.getAllByText(/conversation details/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("call-1")).toBeInTheDocument();
+    expect(screen.getByText(/no transcript yet/i)).toBeInTheDocument();
+  });
 });

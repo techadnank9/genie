@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { Dashboard } from "./dashboard";
 import { fetchResults, startSearch } from "../lib/api";
@@ -21,6 +21,36 @@ export function HomeExperience({
   const [activeService, setActiveService] = useState(services[0] || "");
   const [activeSession, setActiveSession] = useState<SearchSession | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [restoreLatestSession, setRestoreLatestSession] = useState(true);
+
+  useEffect(() => {
+    if (onStartFromPrompt || !restoreLatestSession) {
+      return;
+    }
+
+    let mounted = true;
+
+    fetchResults()
+      .then((data) => {
+        if (!mounted) {
+          return;
+        }
+
+        const latestSession = data.sessions.at(-1) || null;
+
+        if (!latestSession) {
+          return;
+        }
+
+        setActiveService(latestSession.service);
+        setActiveSession(latestSession);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [onStartFromPrompt, restoreLatestSession]);
 
   const startFromPrompt = async () => {
     const nextService = parseRequestToService(request, services);
@@ -33,6 +63,7 @@ export function HomeExperience({
     setError("");
     setActiveService(nextService);
     setIsStarting(true);
+    setRestoreLatestSession(true);
 
     try {
       const session = onStartFromPrompt
@@ -56,6 +87,12 @@ export function HomeExperience({
         selectedService={activeService}
         session={activeSession}
         isStarting={isStarting}
+        onBackToPrompt={() => {
+          setActiveSession(null);
+          setRequest("");
+          setError("");
+          setRestoreLatestSession(false);
+        }}
       />
     );
   }
@@ -103,7 +140,8 @@ export function HomeExperience({
               value={request}
               onChange={(event) => setRequest(event.target.value)}
               onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
                   void startFromPrompt();
                 }
               }}
@@ -112,7 +150,7 @@ export function HomeExperience({
             <div className="mt-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 text-sm text-zinc-500">
                 <span className="rounded-full border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300">
-                  Cmd + Enter
+                  Enter
                 </span>
                 <span>to submit</span>
               </div>

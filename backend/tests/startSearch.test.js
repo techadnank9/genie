@@ -36,6 +36,7 @@ test("POST /api/start-search creates a session and triggers one outbound call pe
   assert.equal(sessions[0].businesses.length, 2);
   assert.equal(outboundCalls.length, 2);
   assert.equal(outboundCalls[0].phone_number, "+18728883804");
+  assert.equal(sessions[0].businesses[0].callStatus, "pending");
 });
 
 test("POST /api/start-search keeps the session alive when one outbound call fails", async () => {

@@ -27,6 +27,14 @@ export function createSession({ sessionId, service, businesses }) {
       callStatus: "queued",
       callId: null,
       error: null,
+      callDurationSeconds: null,
+      fromPhone: null,
+      toPhone: business.phone || null,
+      disconnectReason: null,
+      transcript: "",
+      summary: "",
+      lastEventType: null,
+      lastUpdatedAt: null,
     })),
     results: [],
     cheapestOption: null,
@@ -44,7 +52,7 @@ export function upsertResult({ sessionId, service, result }) {
     session = createSession({
       sessionId,
       service,
-      businesses: [],
+    businesses: [],
     });
   }
 
@@ -91,6 +99,80 @@ export function updateBusinessCall({ sessionId, businessId, callStatus, callId =
   business.callStatus = callStatus;
   business.callId = callId ?? business.callId;
   business.error = error;
+
+  return session;
+}
+
+export function syncBusinessLiveDetails({
+  sessionId,
+  businessId,
+  callStatus,
+  callId = null,
+  error = null,
+  callDurationSeconds,
+  fromPhone,
+  toPhone,
+  disconnectReason,
+  transcript,
+  summary,
+  lastEventType,
+  lastUpdatedAt,
+}) {
+  const session = findSession(sessionId);
+
+  if (!session) {
+    return null;
+  }
+
+  const business = session.businesses.find((item) => item.id === businessId);
+
+  if (!business) {
+    return session;
+  }
+
+  if (callStatus) {
+    business.callStatus = callStatus;
+  }
+
+  if (callId) {
+    business.callId = callId;
+  }
+
+  if (error !== undefined) {
+    business.error = error;
+  }
+
+  if (callDurationSeconds !== undefined) {
+    business.callDurationSeconds = callDurationSeconds;
+  }
+
+  if (fromPhone !== undefined) {
+    business.fromPhone = fromPhone;
+  }
+
+  if (toPhone !== undefined) {
+    business.toPhone = toPhone;
+  }
+
+  if (disconnectReason !== undefined) {
+    business.disconnectReason = disconnectReason;
+  }
+
+  if (transcript !== undefined) {
+    business.transcript = transcript;
+  }
+
+  if (summary !== undefined) {
+    business.summary = summary;
+  }
+
+  if (lastEventType !== undefined) {
+    business.lastEventType = lastEventType;
+  }
+
+  if (lastUpdatedAt !== undefined) {
+    business.lastUpdatedAt = lastUpdatedAt;
+  }
 
   return session;
 }

@@ -9,6 +9,14 @@ export type Business = {
   callStatus: string;
   callId: string | null;
   error: string | null;
+  callDurationSeconds?: number | null;
+  fromPhone?: string | null;
+  toPhone?: string | null;
+  disconnectReason?: string | null;
+  transcript?: string;
+  summary?: string;
+  lastEventType?: string | null;
+  lastUpdatedAt?: string | null;
 };
 
 export type CallResult = {
@@ -20,6 +28,12 @@ export type CallResult = {
   availability: string;
   notes: string;
   updatedAt: string;
+  transcript?: string;
+  callId?: string | null;
+  durationSeconds?: number | null;
+  fromPhone?: string | null;
+  toPhone?: string | null;
+  disconnectReason?: string | null;
 };
 
 export type SearchSession = {
@@ -35,4 +49,3 @@ export type SearchSession = {
 export type ResultsResponse = {
   sessions: SearchSession[];
 };
-

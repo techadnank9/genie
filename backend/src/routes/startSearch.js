@@ -48,7 +48,7 @@ export function createStartSearchRouter({ broker, smallestClient }) {
         updateBusinessCall({
           sessionId,
           businessId: business.id,
-          callStatus: "requested",
+          callStatus: "pending",
           callId:
             call.callId ||
             call.call_id ||
