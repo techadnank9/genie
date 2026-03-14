@@ -87,5 +87,55 @@ export function createSmallestClient(config = getConfig()) {
       const detailsPayload = await parseJson(detailsResponse);
       return detailsPayload?.data || detailsPayload || log;
     },
+    async listConversationHistoryByNumber(phoneNumber, limit = 10) {
+      if (!phoneNumber) {
+        return [];
+      }
+
+      const url = new URL(`${config.smallestBaseUrl}/conversation`);
+      url.searchParams.set("search", phoneNumber);
+      url.searchParams.set("limit", String(limit));
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${config.smallestApiKey}`,
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const payload = await parseJson(response);
+      const logs = payload?.data?.logs || [];
+      const matchingLogs = logs.filter((log) => (log.to || log.toPhone) === phoneNumber);
+
+      const detailedLogs = await Promise.all(
+        matchingLogs.map(async (log) => {
+          if (!log?._id) {
+            return log;
+          }
+
+          try {
+            const detailsResponse = await fetch(`${config.smallestBaseUrl}/conversation/${log._id}`, {
+              headers: {
+                Authorization: `Bearer ${config.smallestApiKey}`,
+              },
+            });
+
+            if (!detailsResponse.ok) {
+              return log;
+            }
+
+            const detailsPayload = await parseJson(detailsResponse);
+            return detailsPayload?.data || detailsPayload || log;
+          } catch {
+            return log;
+          }
+        }),
+      );
+
+      return detailedLogs;
+    },
   };
 }

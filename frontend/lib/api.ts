@@ -46,6 +46,25 @@ export async function stopSearch(sessionId: string) {
   return response.json();
 }
 
+export async function fetchCallHistory(phone: string, currentCallId?: string) {
+  const url = new URL(`${backendUrl}/api/call-history`);
+  url.searchParams.set("phone", phone);
+
+  if (currentCallId) {
+    url.searchParams.set("currentCallId", currentCallId);
+  }
+
+  const response = await fetch(url, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch call history");
+  }
+
+  return response.json();
+}
+
 export function createResultsStream() {
   if (typeof EventSource === "undefined") {
     return null;

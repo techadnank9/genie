@@ -14,7 +14,12 @@ function normalizeLiveLog(log) {
         .map((entry) => `${entry.role || "speaker"}: ${entry.content || ""}`.trim())
         .join("\n")
     : transcriptEntries || log.conversationTranscript || "";
-  const summary = log.summary || log.callSummary || log.metadata?.summary || "";
+  const summary =
+    log.summary ||
+    log.callSummary ||
+    log.metadata?.summary ||
+    log.postCallAnalytics?.summary ||
+    "";
 
   return {
     callId: log.callId || log.call_id || null,
@@ -124,6 +129,41 @@ export function createResultsRouter({ broker, smallestClient }) {
 
     response.json({
       sessions: listSessions(),
+    });
+  });
+
+  router.get("/call-history", async (request, response) => {
+    const phone = String(request.query.phone || "").trim();
+    const currentCallId = String(request.query.currentCallId || "").trim();
+
+    if (!phone) {
+      response.status(400).json({
+        error: "phone is required",
+      });
+      return;
+    }
+
+    const history =
+      typeof smallestClient?.listConversationHistoryByNumber === "function"
+        ? await smallestClient.listConversationHistoryByNumber(phone, 20)
+        : [];
+
+    const calls = history
+      .map((log) => normalizeLiveLog(log))
+      .filter(Boolean)
+      .filter((call) => call.callId && call.callId !== currentCallId)
+      .map((call) => ({
+        callId: call.callId,
+        calledNumber: call.toPhone || phone,
+        status: call.status,
+        transcript: call.transcript,
+        updatedAt: call.updatedAt,
+        durationSeconds: call.durationSeconds,
+        summary: call.summary || call.notes,
+      }));
+
+    response.json({
+      calls,
     });
   });
 

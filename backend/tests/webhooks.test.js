@@ -202,3 +202,43 @@ test("GET /api/results enriches sessions from smallest call logs", async () => {
   assert.match(result.transcript, /agent: Hi, I am calling/i);
   assert.match(result.transcript, /user: We have an opening/i);
 });
+
+test("GET /api/call-history returns previous calls for a called number", async () => {
+  const app = buildApp({
+    smallestClient: {
+      async listConversationHistoryByNumber(phone) {
+        assert.equal(phone, "+18728883804");
+        return [
+          {
+            callId: "call-current",
+            status: "active",
+            to: "+18728883804",
+          },
+          {
+            callId: "call-old-1",
+            status: "completed",
+            to: "+18728883804",
+            from: "+17712513617",
+            duration: 93,
+            summary: "Booked for tomorrow morning.",
+            transcript: [
+              { role: "agent", content: "Do you have anything tomorrow morning?" },
+              { role: "user", content: "Yes, we can do 11:30 AM." },
+            ],
+            createdAt: "2026-03-14T16:35:00.000Z",
+          },
+        ];
+      },
+    },
+  });
+
+  const response = await inject(app, {
+    method: "GET",
+    url: "/api/call-history?phone=%2B18728883804&currentCallId=call-current",
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.json.calls.length, 1);
+  assert.equal(response.json.calls[0].callId, "call-old-1");
+  assert.match(response.json.calls[0].transcript, /agent: Do you have anything tomorrow morning/i);
+});

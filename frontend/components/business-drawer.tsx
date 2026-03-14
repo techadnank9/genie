@@ -1,8 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import type { Business, CallResult } from "../lib/types";
+import { fetchCallHistory } from "../lib/api";
+
+type PreviousCall = {
+  callId: string;
+  calledNumber: string;
+  status: string;
+  transcript: string;
+  updatedAt: string;
+  durationSeconds?: number | null;
+  summary?: string;
+};
 
 type BusinessDrawerProps = {
   business: Business | null;
@@ -52,7 +63,29 @@ function formatDuration(seconds: number | null | undefined) {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
-export function BusinessDrawer({ business, result, isOpen, onClose }: BusinessDrawerProps) {
+export function BusinessDrawer({
+  business,
+  result,
+  isOpen,
+  onClose,
+}: BusinessDrawerProps) {
+  const [previousCalls, setPreviousCalls] = useState<PreviousCall[]>([]);
+
+  useEffect(() => {
+    if (!isOpen || !business) {
+      setPreviousCalls([]);
+      return;
+    }
+
+    fetchCallHistory(business.toPhone || business.phone, business.callId || undefined)
+      .then((payload) => {
+        setPreviousCalls(payload.calls || []);
+      })
+      .catch(() => {
+        setPreviousCalls([]);
+      });
+  }, [business, isOpen]);
+
   return (
     <>
       <div
@@ -168,6 +201,45 @@ export function BusinessDrawer({ business, result, isOpen, onClose }: BusinessDr
                 <p className="mt-3 text-sm leading-6 text-zinc-600">
                   {result?.transcript || business.transcript || "No transcript yet. Live conversation details will appear here as webhook updates come in."}
                 </p>
+              </section>
+
+              <section className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  Previous calls
+                </h3>
+                <div className="mt-3 space-y-3">
+                  {previousCalls.length === 0 ? (
+                    <p className="text-sm leading-6 text-zinc-600">
+                      No previous calls recorded for this number yet.
+                    </p>
+                  ) : (
+                    previousCalls.map((call) => (
+                      <article
+                        key={call.callId}
+                        className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-zinc-950">{call.callId}</p>
+                            <p className="text-xs text-zinc-500">
+                              {formatUpdatedAt(call.updatedAt)} · {formatStatus(call.status)}
+                            </p>
+                          </div>
+                          <p className="text-xs text-zinc-500">
+                            {formatDuration(call.durationSeconds)}
+                          </p>
+                        </div>
+                        <div className="mt-3 space-y-2 text-sm text-zinc-600">
+                          <p>Called number: {call.calledNumber}</p>
+                          <p>{call.summary || "No summary captured."}</p>
+                          <p className="whitespace-pre-line">
+                            {call.transcript || "No transcript captured."}
+                          </p>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
               </section>
             </>
           ) : (
