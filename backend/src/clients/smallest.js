@@ -1,6 +1,16 @@
 import { getConfig } from "../config.js";
 
 export function createSmallestClient(config = getConfig()) {
+  async function parseJson(response) {
+    const text = await response.text();
+
+    if (!text) {
+      return null;
+    }
+
+    return JSON.parse(text);
+  }
+
   return {
     async startOutboundCall({ phone_number, metadata }) {
       const response = await fetch(`${config.smallestBaseUrl}/conversation/outbound`, {
@@ -39,22 +49,43 @@ export function createSmallestClient(config = getConfig()) {
         return null;
       }
 
-      const url = new URL(`${config.smallestBaseUrl}/conversation`);
-      url.searchParams.set("search", callId);
-      url.searchParams.set("limit", "1");
+      const searchResponse = await fetch(`${config.smallestBaseUrl}/conversation/search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${config.smallestApiKey}`,
+        },
+        body: JSON.stringify({
+          callIds: [callId],
+        }),
+      });
 
-      const response = await fetch(url, {
+      if (!searchResponse.ok) {
+        return null;
+      }
+
+      const searchPayload = await parseJson(searchResponse);
+      const log =
+        searchPayload?.data?.logs?.find((item) => item.callId === callId) ||
+        searchPayload?.data?.logs?.[0] ||
+        null;
+
+      if (!log?._id) {
+        return log;
+      }
+
+      const detailsResponse = await fetch(`${config.smallestBaseUrl}/conversation/${log._id}`, {
         headers: {
           Authorization: `Bearer ${config.smallestApiKey}`,
         },
       });
 
-      if (!response.ok) {
-        return null;
+      if (!detailsResponse.ok) {
+        return log;
       }
 
-      const payload = await response.json();
-      return payload?.data?.logs?.find((item) => item.callId === callId) || payload?.data?.logs?.[0] || null;
+      const detailsPayload = await parseJson(detailsResponse);
+      return detailsPayload?.data || detailsPayload || log;
     },
   };
 }

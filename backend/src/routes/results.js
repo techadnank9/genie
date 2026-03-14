@@ -8,6 +8,13 @@ function normalizeLiveLog(log) {
   }
 
   const extracted = log.extracted_data || log.extractedData || {};
+  const transcriptEntries = log.transcript || log.metadata?.transcript || log.data?.transcript;
+  const transcript = Array.isArray(transcriptEntries)
+    ? transcriptEntries
+        .map((entry) => `${entry.role || "speaker"}: ${entry.content || ""}`.trim())
+        .join("\n")
+    : transcriptEntries || log.conversationTranscript || "";
+  const summary = log.summary || log.callSummary || log.metadata?.summary || "";
 
   return {
     callId: log.callId || log.call_id || null,
@@ -21,8 +28,8 @@ function normalizeLiveLog(log) {
     fromPhone: log.from || log.fromPhone || null,
     toPhone: log.to || log.toPhone || null,
     disconnectReason: log.disconnectionReason || log.disconnectReason || null,
-    transcript: log.transcript || log.conversationTranscript || "",
-    summary: log.summary || "",
+    transcript,
+    summary,
     updatedAt: log.updatedAt || log.createdAt || new Date().toISOString(),
     price:
       typeof extracted.price === "number"

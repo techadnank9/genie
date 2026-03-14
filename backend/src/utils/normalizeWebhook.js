@@ -1,6 +1,7 @@
 export function normalizeWebhook(payload) {
   const metadata = payload.metadata || {};
   const extracted = payload.extracted_data || payload.extractedData || {};
+  const transcriptEntries = payload.transcript || metadata.transcript || payload.data?.transcript;
   const eventType = metadata.eventType || payload.type || "";
   const callStatus =
     payload.status ||
@@ -17,11 +18,11 @@ export function normalizeWebhook(payload) {
       : typeof payload.callDuration === "number"
         ? payload.callDuration
         : null;
-  const transcript =
-    payload.transcript ||
-    payload.conversationTranscript ||
-    payload.data?.transcript ||
-    "";
+  const transcript = Array.isArray(transcriptEntries)
+    ? transcriptEntries
+        .map((entry) => `${entry.role || "speaker"}: ${entry.content || ""}`.trim())
+        .join("\n")
+    : transcriptEntries || payload.conversationTranscript || "";
   const summary = payload.summary || payload.data?.summary || "";
 
   return {

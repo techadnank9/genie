@@ -156,13 +156,23 @@ test("GET /api/results enriches sessions from smallest call logs", async () => {
       async getConversationLog(callId) {
         assert.equal(callId, "call-live-1");
         return {
+          _id: "log-1",
           callId: "call-live-1",
           status: "completed",
           duration: 76,
           from: "+17712513617",
           to: "+18728883804",
           summary: "Customer asked about tomorrow morning availability and was quoted $60.",
-          transcript: "Genie asked about pricing and availability.",
+          transcript: [
+            {
+              role: "agent",
+              content: "Hi, I am calling to ask about tomorrow morning availability.",
+            },
+            {
+              role: "user",
+              content: "We have an opening at 11:30 AM and the cleaning is $60.",
+            },
+          ],
           extracted_data: {
             price: 60,
             availability: "Tomorrow 11:30 AM",
@@ -189,5 +199,6 @@ test("GET /api/results enriches sessions from smallest call logs", async () => {
   assert.equal(business.callDurationSeconds, 76);
   assert.equal(result.price, 60);
   assert.equal(result.availability, "Tomorrow 11:30 AM");
-  assert.equal(result.transcript, "Genie asked about pricing and availability.");
+  assert.match(result.transcript, /agent: Hi, I am calling/i);
+  assert.match(result.transcript, /user: We have an opening/i);
 });
