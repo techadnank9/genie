@@ -3,7 +3,7 @@ export const businesses = [
     id: "dental-1",
     name: "Bright Smile Dental",
     service: "dental cleaning",
-    phone: "+1 872 888 3804",
+    phone: "+18728883804",
     location: "San Francisco, CA",
     priceRange: "$120-$160",
     availabilityHint: "Weekday mornings",
