@@ -12,7 +12,31 @@ type ResultsListProps = {
 type HistoricalResult = CallResult & {
   businessId: string;
   businessName: string;
+  summary?: string;
 };
+
+function looksLikeVoicemail(summary: string | undefined) {
+  const text = (summary || "").trim().toLowerCase();
+
+  if (!text) {
+    return false;
+  }
+
+  return (
+    text.includes("voicemail") ||
+    text.includes("voice mail") ||
+    text.includes("left a message") ||
+    text.includes("recording a message") ||
+    text.includes("person being called was unavailable") ||
+    text.includes("call was directed to voicemail") ||
+    text.includes("call was forwarded to voicemail")
+  );
+}
+
+function isSuccessfulCompleted(status: string | undefined, durationSeconds: number | null | undefined) {
+  const normalizedStatus = (status || "").trim().toLowerCase();
+  return normalizedStatus === "completed" && typeof durationSeconds === "number" && durationSeconds > 0;
+}
 
 export function ResultsList({ businesses, results, cheapestOption }: ResultsListProps) {
   const [historicalResults, setHistoricalResults] = useState<HistoricalResult[]>([]);
@@ -27,9 +51,8 @@ export function ResultsList({ businesses, results, cheapestOption }: ResultsList
             const payload = await fetchCallHistory(business.toPhone || business.phone, business.callId || undefined);
             const latestCompletedCall = (payload.calls || []).find(
               (call: HistoricalResult) =>
-                call.status === "completed" &&
-                typeof call.durationSeconds === "number" &&
-                call.durationSeconds > 0,
+                isSuccessfulCompleted(call.status, call.durationSeconds) &&
+                !looksLikeVoicemail(call.summary),
             );
 
             if (!latestCompletedCall) {
@@ -73,30 +96,44 @@ export function ResultsList({ businesses, results, cheapestOption }: ResultsList
   const latestCompletedResults = results
     .filter(
       (result) =>
-        result.status === "completed" &&
-        typeof result.durationSeconds === "number" &&
-        result.durationSeconds > 0,
+        isSuccessfulCompleted(result.status, result.durationSeconds) &&
+        !looksLikeVoicemail(result.notes || result.availability),
     )
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
     .filter((result, index, collection) => {
       return index === collection.findIndex((item) => item.businessId === result.businessId);
     });
 
-  const visibleResults = latestCompletedResults.length > 0 ? latestCompletedResults : historicalResults;
+  const businessIds = new Set([
+    ...latestCompletedResults.map((result) => result.businessId),
+    ...historicalResults.map((result) => result.businessId),
+  ]);
+
+  const visibleResults = Array.from(businessIds)
+    .map((businessId) => {
+      const currentResult = latestCompletedResults.find((result) => result.businessId === businessId);
+
+      if (currentResult) {
+        return currentResult;
+      }
+
+      return historicalResults.find((result) => result.businessId === businessId) || null;
+    })
+    .filter(Boolean) as Array<CallResult | HistoricalResult>;
 
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-white p-6">
+    <section className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,22,48,0.78),rgba(25,13,46,0.74))] p-6 shadow-[0_24px_70px_rgba(4,4,24,0.36)] backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-zinc-950">Collected results</h2>
+        <h2 className="font-['Cinzel_Decorative'] text-2xl text-amber-100">Collected results</h2>
         {cheapestOption ? (
-          <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+          <span className="rounded-full border border-amber-300/20 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-amber-100/72">
             Best current option
           </span>
         ) : null}
       </div>
       <div className="mt-4 space-y-4">
         {visibleResults.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-300 p-6 text-sm text-zinc-500">
+          <div className="rounded-2xl border border-dashed border-white/15 p-6 text-sm text-indigo-100/58">
             Results will appear here as Genie finishes each business call.
           </div>
         ) : null}
@@ -108,40 +145,18 @@ export function ResultsList({ businesses, results, cheapestOption }: ResultsList
               key={result.businessId}
               className={`rounded-2xl border p-4 ${
                 isCheapest
-                  ? "border-zinc-950 bg-zinc-950 text-white"
-                  : "border-zinc-200 bg-zinc-50"
+                  ? "border-amber-200/40 bg-[linear-gradient(180deg,rgba(251,191,36,0.16),rgba(76,29,149,0.24))] text-white shadow-[0_0_0_1px_rgba(251,191,36,0.18)]"
+                  : "border-white/10 bg-white/6"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className={`text-lg font-semibold ${isCheapest ? "text-white" : "text-zinc-950"}`}>
+                  <h3 className={`text-xl font-semibold ${isCheapest ? "text-amber-50" : "text-amber-50"}`}>
                     {result.businessName}
                   </h3>
-                  <p className={`text-sm ${isCheapest ? "text-zinc-300" : "text-zinc-600"}`}>
-                    {result.availability}
-                  </p>
-                  <p className={`mt-1 text-xs uppercase tracking-[0.18em] ${isCheapest ? "text-zinc-400" : "text-zinc-500"}`}>
-                    Last completed conversation
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-xs uppercase tracking-[0.2em] ${isCheapest ? "text-zinc-400" : "text-zinc-500"}`}>
-                    Quoted price
-                  </p>
-                  <p className={`mt-1 text-3xl font-semibold ${isCheapest ? "text-white" : "text-zinc-950"}`}>
-                    {typeof result.price === "number" ? `$${result.price}` : "Pending"}
-                  </p>
-                  <p className={`mt-2 text-xs ${isCheapest ? "text-zinc-300" : "text-zinc-500"}`}>
-                    {new Date(result.updatedAt).toLocaleString([], {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
                 </div>
               </div>
-              <p className={`mt-3 text-sm ${isCheapest ? "text-zinc-300" : "text-zinc-600"}`}>
+              <p className={`mt-4 text-sm leading-7 ${isCheapest ? "text-indigo-100/82" : "text-indigo-100/78"}`}>
                 {result.notes || "No extra notes yet."}
               </p>
             </article>

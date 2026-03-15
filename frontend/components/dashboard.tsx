@@ -172,20 +172,23 @@ export function Dashboard({
     currentSession?.results.find((result) => result.businessId === selectedBusinessId) || null;
 
   return (
-    <main className="min-h-screen bg-[#fafaf8] px-4 py-4 md:px-6 md:py-6">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-3xl border border-zinc-200 bg-white p-5 md:p-6">
-          <p className="text-xs font-medium uppercase tracking-[0.28em] text-zinc-500">Genie</p>
+    <main className="relative min-h-screen overflow-hidden px-4 py-4 text-white md:px-6 md:py-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_12%,rgba(251,191,36,0.14),transparent_18%),radial-gradient(circle_at_78%_14%,rgba(168,85,247,0.2),transparent_24%),linear-gradient(180deg,rgba(9,9,29,0.94),rgba(13,18,48,0.96))]" />
+      <div className="mx-auto max-w-7xl">
+        <section className="relative overflow-hidden rounded-[2.2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(13,19,45,0.82),rgba(39,16,68,0.72))] p-5 shadow-[0_35px_100px_rgba(4,4,24,0.45)] backdrop-blur-2xl md:p-7">
+          <div className="pointer-events-none absolute -top-12 right-0 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.24),transparent_70%)] blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(251,191,36,0.18),transparent_68%)] blur-3xl" />
+          <p className="text-xs font-medium uppercase tracking-[0.34em] text-amber-200/74">Genie</p>
           <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">
+              <h1 className="font-['Cinzel_Decorative'] text-3xl tracking-tight text-transparent bg-gradient-to-r from-amber-100 via-yellow-300 to-amber-200 bg-clip-text md:text-4xl">
                 Search in progress
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 md:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-indigo-100/76 md:text-base">
                 Genie is searching businesses, placing calls, and collecting live quotes for you.
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-zinc-500">
-                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 font-medium capitalize text-zinc-600">
+              <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-indigo-100/62">
+                <span className="rounded-full border border-amber-300/20 bg-white/8 px-3 py-1 font-medium capitalize text-amber-100">
                   {status}
                 </span>
                 <span>{activeService}</span>
@@ -196,7 +199,7 @@ export function Dashboard({
             <div className="flex shrink-0 flex-wrap items-center gap-3">
               {onBackToPrompt ? (
                 <button
-                  className="text-sm font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="text-sm font-medium text-indigo-100/68 transition hover:text-amber-100"
                   onClick={onBackToPrompt}
                   type="button"
                 >
@@ -205,7 +208,7 @@ export function Dashboard({
               ) : null}
               {currentSession?.status !== "stopped" ? (
                 <button
-                  className="text-sm font-medium text-rose-600 transition hover:text-rose-700"
+                  className="text-sm font-medium text-rose-300 transition hover:text-rose-200"
                   onClick={handleStopSearch}
                   type="button"
                 >
@@ -213,7 +216,7 @@ export function Dashboard({
                 </button>
               ) : null}
               <button
-                className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-100"
+                className="sparkle-hover rounded-2xl border border-amber-300/25 bg-white/10 px-4 py-2.5 text-sm font-medium text-amber-50 transition hover:bg-white/14"
                 onClick={handleStartSearch}
                 type="button"
               >
