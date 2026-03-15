@@ -140,6 +140,28 @@ export function Dashboard({
 
   const currentSession = activeSession;
   const status = currentSession?.status || "idle";
+  const displayedResults =
+    currentSession?.results.map((result) => {
+      const matchingBusiness =
+        currentSession.businesses.find((business) => business.id === result.businessId) || null;
+
+      return {
+        ...result,
+        status: result.status || matchingBusiness?.callStatus || "pending",
+        availability:
+          result.availability && result.availability !== "Unknown"
+            ? result.availability
+            : matchingBusiness?.summary || matchingBusiness?.availabilityHint || "Unknown",
+        notes:
+          result.notes ||
+          matchingBusiness?.summary ||
+          matchingBusiness?.transcript ||
+          "No extra notes yet.",
+        updatedAt: result.updatedAt || matchingBusiness?.lastUpdatedAt || currentSession.createdAt,
+        durationSeconds:
+          result.durationSeconds ?? matchingBusiness?.callDurationSeconds ?? null,
+      };
+    }) || [];
   const activeBusiness =
     currentSession?.businesses.find((business) =>
       ["calling", "requested"].includes(business.callStatus),
@@ -211,7 +233,8 @@ export function Dashboard({
             />
           </div>
           <ResultsList
-            results={currentSession?.results || []}
+            businesses={currentSession?.businesses || []}
+            results={displayedResults}
             cheapestOption={currentSession?.cheapestOption || null}
           />
         </div>

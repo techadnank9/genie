@@ -232,9 +232,9 @@ export function BusinessDrawer({
                         <div className="mt-3 space-y-2 text-sm text-zinc-600">
                           <p>Called number: {call.calledNumber}</p>
                           <p>{call.summary || "No summary captured."}</p>
-                          <p className="whitespace-pre-line">
-                            {call.transcript || "No transcript captured."}
-                          </p>
+                          {call.transcript ? (
+                            <p className="whitespace-pre-line">{call.transcript}</p>
+                          ) : null}
                         </div>
                       </article>
                     ))

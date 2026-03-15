@@ -47,6 +47,7 @@ const session: SearchSession = {
       availability: "Tomorrow 9 AM",
       notes: "Includes exam",
       updatedAt: new Date().toISOString(),
+      durationSeconds: 93,
     },
     {
       businessId: "dental-2",
@@ -57,6 +58,7 @@ const session: SearchSession = {
       availability: "Friday 2 PM",
       notes: "New patient special",
       updatedAt: new Date().toISOString(),
+      durationSeconds: 45,
     },
   ],
   cheapestOption: {
@@ -68,6 +70,7 @@ const session: SearchSession = {
     availability: "Friday 2 PM",
     notes: "New patient special",
     updatedAt: new Date().toISOString(),
+    durationSeconds: 45,
   },
 };
 
@@ -90,6 +93,7 @@ describe("Dashboard", () => {
     expect(screen.getAllByText(/Market Street Dental Care/i)).toHaveLength(2);
     expect(screen.getByText(/\$99/)).toBeInTheDocument();
     expect(screen.getByText(/best current option/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/last completed conversation/i).length).toBeGreaterThan(0);
   });
 
   it("parses a natural-language request and transitions into the live dashboard", async () => {
