@@ -23,14 +23,14 @@ Hackathon MVP for comparing local business options using a live smallest.ai voic
 ### 1. Install dependencies
 
 ```bash
-cd /Users/adnan/Documents/genie/backend && npm install
-cd /Users/adnan/Documents/genie/frontend && npm install
+cd backend && npm install
+cd frontend && npm install
 ```
 
 ### 2. Configure the backend
 
 ```bash
-cd /Users/adnan/Documents/genie/backend
+cd backend
 cp .env.example .env
 ```
 
@@ -49,7 +49,7 @@ https://your-public-url/webhooks/smallest
 ### 3. Run the backend
 
 ```bash
-cd /Users/adnan/Documents/genie/backend
+cd backend
 npm run dev
 ```
 
@@ -58,7 +58,7 @@ The backend runs on `http://localhost:4000`.
 ### 4. Run the frontend
 
 ```bash
-cd /Users/adnan/Documents/genie/frontend
+cd frontend
 NEXT_PUBLIC_BACKEND_URL=http://localhost:4000 npm run dev
 ```
 
@@ -111,7 +111,7 @@ http://localhost:4000/api/stream
 ## Testing
 
 ```bash
-cd /Users/adnan/Documents/genie/backend && npm test
-cd /Users/adnan/Documents/genie/frontend && npm test
-cd /Users/adnan/Documents/genie/frontend && npm run build
+cd backend && npm test
+cd frontend && npm test
+cd frontend && npm run build
 ```
